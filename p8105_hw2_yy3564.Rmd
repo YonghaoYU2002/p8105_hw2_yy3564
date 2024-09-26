@@ -1,0 +1,32 @@
+---
+title: "p8105_hw1_yy3564"
+author: "Yonghao YU"
+date: "2024-09-26"
+output: github_document
+---
+Problem 2:
+```{r, message=FALSE}
+library(tidyverse)
+library(readxl)
+```
+
+
+
+```{r}
+Mrtrashwheel_df = 
+  read_excel("data/202309 Trash Wheel Collection Data.xlsx",
+             sheet = 1, 
+             range = "A2:N587",
+             na = c("NA", ".", "")) |>
+  janitor::clean_names() |>
+  filter(weight_tons != 0, volume_cubic_yards != 0) |>
+  mutate(sports_balls_cleaned = as.integer(round(sports_balls, 0)))|>
+  select(-sports_balls)
+Mrtrashwheel_df
+```
+
+
+
+
+
+
