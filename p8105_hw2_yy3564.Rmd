@@ -11,7 +11,7 @@ library(readxl)
 ```
 
 
-
+First, read and clean the Mr.Trash Wheel dataset! 
 ```{r}
 Mrtrashwheel_df = 
   read_excel("data/202309 Trash Wheel Collection Data.xlsx",
@@ -19,14 +19,69 @@ Mrtrashwheel_df =
              range = "A2:N587",
              na = c("NA", ".", "")) |>
   janitor::clean_names() |>
+  mutate(year = as.numeric(year)) |>
   filter(weight_tons != 0, volume_cubic_yards != 0) |>
-  mutate(sports_balls_cleaned = as.integer(round(sports_balls, 0)))|>
+  drop_na(weight_tons:homes_powered) |>
+  mutate(sports_balls_modified = as.integer(round(sports_balls, 0)))|>
   select(-sports_balls)
 Mrtrashwheel_df
+```
+Then, read and clean the Professor Trash Wheel dataset! 
+```{r}
+Proftrashwheel_df = 
+  read_excel("data/202309 Trash Wheel Collection Data.xlsx",
+             sheet = 2, 
+             range = "A2:M109",
+             na = c("NA", ".", "")) |>
+  janitor::clean_names() |>
+  filter(weight_tons != 0, volume_cubic_yards != 0) |>
+  drop_na(weight_tons:homes_powered)
+
+Proftrashwheel_df
+
+```
+
+
+Last, read and clean the Gwynnda Trash Wheel dataset! 
+
+```{r}
+Gwytrashwheel_df = 
+  read_excel("data/202309 Trash Wheel Collection Data.xlsx",
+             sheet = 4, 
+             range = "A2:L159",
+             na = c("NA", ".", "")) |>
+  janitor::clean_names() |>
+  filter(weight_tons != 0, volume_cubic_yards != 0) |>
+  drop_na(weight_tons:homes_powered)
+
+Gwytrashwheel_df
+```
+Before combining, add an additional column indicating which Trash Wheel is which!
+```{r}
+Mrtrashwheel_df = mutate(Mrtrashwheel_df, which_trash_wheel = "Mr.Trash Wheel")
+Proftrashwheel_df = mutate(Proftrashwheel_df, which_trash_wheel = "Professor Trash Wheel")
+Gwytrashwheel_df = mutate(Gwytrashwheel_df, which_trash_wheel = "Gwynnda Trash Wheel")
 ```
 
 
 
 
+Then find a way to combine the datasets,for "sports_balls_modified is NA", convert it into 0.
+```{r}
+combined_df = 
+  bind_rows(Mrtrashwheel_df, Proftrashwheel_df, Gwytrashwheel_df) |>
+  mutate(sports_balls_modified = ifelse(is.na(sports_balls_modified), 0, sports_balls_modified))
+combined_df 
+```
+Finally, we use inline R to write a paragraph about this data!!!
 
 
+There are `r nrow(combined_df)-3` observations in the combined data. 
+
+From available data, the total weight of trash collected by Professor Trash Wheel is 
+`r sum(filter(combined_df, which_trash_wheel == "Mr.Trash Wheel")$weight_tons, na.rm = TRUE) /2` tons.
+
+And from available data, the total number of cigarette butts collected by Gwynnda in June of 2022 is 
+`r sum(filter(combined_df, which_trash_wheel == "Gwynnda Trash Wheel", month == "June", year == 2022)$cigarette_butts, na.rm = TRUE)`.
+
+I think it may because when we do data cleaning, the Gwynnda Trash Wheel dataset contain rows that do not include dumpster-specific data(June of 2022 is also in this range),and I discard those rows of data, so when I try to find the number of cigarette butts in the combined dataset, those part disappear, hence the value is 0!
