@@ -1,17 +1,16 @@
 ---
 title: "p8105_hw1_yy3564"
 author: "Yonghao YU"
-date: "2024-09-26"
+date: "2024-09-28"
 output: github_document
 ---
-Problem 2:
+# Problem 2:
 ```{r, message=FALSE}
 library(tidyverse)
 library(readxl)
 ```
 
-
-First, read and clean the Mr.Trash Wheel dataset! 
+## First, read and clean the Mr.Trash Wheel dataset! 
 ```{r}
 Mrtrashwheel_df = 
   read_excel("data/202309 Trash Wheel Collection Data.xlsx",
@@ -26,7 +25,7 @@ Mrtrashwheel_df =
   select(-sports_balls)
 Mrtrashwheel_df
 ```
-Then, read and clean the Professor Trash Wheel dataset! 
+## Then, read and clean the Professor Trash Wheel dataset! 
 ```{r}
 Proftrashwheel_df = 
   read_excel("data/202309 Trash Wheel Collection Data.xlsx",
@@ -41,8 +40,7 @@ Proftrashwheel_df
 
 ```
 
-
-Last, read and clean the Gwynnda Trash Wheel dataset! 
+## Last, read and clean the Gwynnda Trash Wheel dataset! 
 
 ```{r}
 Gwytrashwheel_df = 
@@ -56,7 +54,7 @@ Gwytrashwheel_df =
 
 Gwytrashwheel_df
 ```
-Before combining, add an additional column indicating which Trash Wheel is which!
+## Before combining, add an additional column indicating which Trash Wheel is which!
 ```{r}
 Mrtrashwheel_df = mutate(Mrtrashwheel_df, which_trash_wheel = "Mr.Trash Wheel")
 Proftrashwheel_df = mutate(Proftrashwheel_df, which_trash_wheel = "Professor Trash Wheel")
@@ -64,16 +62,14 @@ Gwytrashwheel_df = mutate(Gwytrashwheel_df, which_trash_wheel = "Gwynnda Trash W
 ```
 
 
-
-
-Then find a way to combine the datasets,for "sports_balls_modified is NA", convert it into 0.
+## Then find a way to combine the datasets,for "sports_balls_modified is NA", convert it into 0.
 ```{r}
 combined_df = 
   bind_rows(Mrtrashwheel_df, Proftrashwheel_df, Gwytrashwheel_df) |>
   mutate(sports_balls_modified = ifelse(is.na(sports_balls_modified), 0, sports_balls_modified))
 combined_df 
 ```
-Finally, we use inline R to write a paragraph about this data!!!
+## Finally, we use inline R to write a paragraph about this data!!!
 
 
 There are `r nrow(combined_df)-3` observations in the combined data. 
@@ -85,3 +81,118 @@ And from available data, the total number of cigarette butts collected by Gwynnd
 `r sum(filter(combined_df, which_trash_wheel == "Gwynnda Trash Wheel", month == "June", year == 2022)$cigarette_butts, na.rm = TRUE)`.
 
 I think it may because when we do data cleaning, the Gwynnda Trash Wheel dataset contain rows that do not include dumpster-specific data(June of 2022 is also in this range),and I discard those rows of data, so when I try to find the number of cigarette butts in the combined dataset, those part disappear, hence the value is 0!
+
+
+# Problem 3:
+
+## First, we do data cleaning for three datasets seperately!
+## For bakers.csv dataset:
+```{r}
+bakers_df = 
+  read_csv("data/bakers.csv", na = c("NA", ".", "")) |>
+  janitor::clean_names() |>
+  distinct()  
+bakers_df  
+```
+## For bakes.csv dataset:
+```{r}
+bakes_df = 
+  read_csv("data/bakes.csv", na = c("NA", ".", "", "UNKNOWN", "N/A", "Unknown")) |>
+  janitor::clean_names() |>
+  distinct() |> 
+  mutate(baker = ifelse(baker == "\"Jo\"", "Jo", baker)) 
+bakes_df  
+```
+## Finally, for results.csv dataset:
+```{r}
+results_df = 
+  read_csv("data/results.csv", na = c("NA", ".", "", "Unknown", "UNKNOWN", "N/A"), skip = 2) |>
+  janitor::clean_names() |>
+  distinct()
+results_df  
+```
+## Use anti_join to check discrepancies between bakers and bakes datasets
+```{r}
+bakers_df_updated = bakers_df |>
+  mutate(baker = sub(" .*", "", baker_name)) |>
+  select(series,baker,everything())
+missing_in_bakers1 = anti_join(bakes_df, bakers_df_updated, by = c("series", "baker"))
+missing_in_bakes1 = anti_join(bakers_df_updated, bakes_df, by = c("series", "baker"))
+```
+
+## Use anti_join to check discrepancies between bakes and results datasets
+```{r}
+missing_in_results1 = anti_join(bakes_df, results_df, by = c("series", "episode", "baker"))
+missing_in_bakes2 = anti_join(results_df, bakes_df, by = c("series", "episode", "baker"))
+missing_in_results1
+```
+## Use anti_join to check discrepancies between bakers and results datasets
+```{r}
+missing_in_results2 = anti_join(bakers_df_updated, results_df, by = c("series", "baker"))
+missing_in_bakers2 = anti_join(results_df, bakers_df_updated, by = c("series", "baker"))
+missing_in_bakers2
+```
+## Then merge three datasets together to create a single,and final dataset!
+```{r}
+complete_dataset <- results_df |>
+  full_join(bakes_df, by = c("series", "episode", "baker")) |>  
+  full_join(bakers_df_updated, by = c("series", "baker"))
+complete_dataset
+```
+## Export the final dataset as a CSV
+```{r, eval=FALSE}
+write_csv(complete_dataset, "final_complete_dataset.csv")
+```
+## Describe your data cleaning process, including any questions you have or choices you made. Briefly discuss the final dataset:
+
+1. Describe the data cleaning process: First of all, I read the data from the bakers.csv file, handles missing values, converts column names to lowercase and standardizes the format, and finally detects and removes duplicate rows to create a cleaned data frame bakers_df. Then, I read the data from the bakes.csv file, treats specified values (like "NA", ".", "UNKNOWN", etc.) as missing, cleans and standardizes the column names, removes duplicate rows, and replaces the value "Jo" (if it appears with double quotes) in the baker column with the value of the Jo. The cleaned and modified data is stored in bakes_df for later use. After that, I read data from the results.csv file, with skipping the first two rows, and treats specific values (such as "NA", ".", "Unknown", "N/A", etc.) as missing values. It then cleans and standardizes the column names, removes any duplicate rows, and stores the cleaned data in results_df for later use!
+
+2. Briefly discuss the final dataset: The final dataset is achieved by the full join of the three cleaned datasets, in the final dataset, there are 1144 rows and 11 columns.
+
+
+## Then Create a reader-friendly table showing the star baker or winner of each episode in Seasons 5 through 10:
+```{r}
+obtable = filter(complete_dataset, series >= 5)|>
+  filter(result == "STAR BAKER" | result == "WINNER") |>
+  select(series, baker, result)
+obtable
+```
+## Comment on this table – were there any predictable overall winners? Any surprises?
+
+1. Predictable Winners: We Look for bakers who consistently won Star Baker. If a baker frequently appeared as a Star Baker and then became the overall Winner, their victory would be predictable.
+
+2. Any Surprises: Any winner who did not frequently win Star Baker, or who only started winning in the later episodes, would be a surprise. Similarly, if a baker dominated the Star Baker titles but did not win the competition, this could also be unexpected.
+
+
+## Then I will Import, clean, tidy, and organize the viewership data in viewers.csv. Then show the first 10 rows of this dataset! 
+```{r}
+viewers_df = 
+  read_csv("data/viewers.csv", na = c("NA")) |>
+  janitor::clean_names() |>
+  distinct() |>
+  pivot_longer(series_1:series_10, names_to = "series", values_to = "viewership") |>
+  mutate(series = sub(".*_", "", series)) |>
+  select(series, everything()) |>
+  arrange(series, episode)
+head(viewers_df, n = 10)
+```
+## After that, calculate the average viewership of Season 1:
+```{r}
+sum1 = filter(viewers_df, series == 1) |>
+  select(viewership) |>
+  drop_na() |>
+  sum() 
+length = sapply(select(filter(viewers_df, series == 1), viewership), function(x) length(x)-sum(is.na(x)))
+avg1 = sum1/unname(length)
+avg1
+```
+## Then use the same method to calculate the average viewership of Season 5:
+```{r}
+sum5 = filter(viewers_df, series == 5) |>
+  select(viewership) |>
+  drop_na() |>
+  sum() 
+length = sapply(select(filter(viewers_df, series == 5), viewership), function(x) length(x)-sum(is.na(x)))
+avg5 = sum5/unname(length)
+avg5
+```
