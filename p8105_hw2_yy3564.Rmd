@@ -1,7 +1,7 @@
 ---
 title: "p8105_hw1_yy3564"
 author: "Yonghao YU"
-date: "2024-09-28"
+date: "2024-10-02"
 output: github_document
 ---
 # Problem 2:
@@ -13,13 +13,12 @@ library(readxl)
 ## First, read and clean the Mr.Trash Wheel dataset! 
 ```{r}
 Mrtrashwheel_df = 
-  read_excel("data/202309 Trash Wheel Collection Data.xlsx",
+  read_excel("data/202409 Trash Wheel Collection Data.xlsx",
              sheet = 1, 
-             range = "A2:N587",
+             range = "A2:N655",
              na = c("NA", ".", "")) |>
   janitor::clean_names() |>
   mutate(year = as.numeric(year)) |>
-  filter(weight_tons != 0, volume_cubic_yards != 0) |>
   drop_na(weight_tons:homes_powered) |>
   mutate(sports_balls_modified = as.integer(round(sports_balls, 0)))|>
   select(-sports_balls)
@@ -28,30 +27,25 @@ Mrtrashwheel_df
 ## Then, read and clean the Professor Trash Wheel dataset! 
 ```{r}
 Proftrashwheel_df = 
-  read_excel("data/202309 Trash Wheel Collection Data.xlsx",
+  read_excel("data/202409 Trash Wheel Collection Data.xlsx",
              sheet = 2, 
-             range = "A2:M109",
+             range = "A2:M123",
              na = c("NA", ".", "")) |>
   janitor::clean_names() |>
-  filter(weight_tons != 0, volume_cubic_yards != 0) |>
   drop_na(weight_tons:homes_powered)
-
 Proftrashwheel_df
-
 ```
 
 ## Last, read and clean the Gwynnda Trash Wheel dataset! 
 
 ```{r}
 Gwytrashwheel_df = 
-  read_excel("data/202309 Trash Wheel Collection Data.xlsx",
+  read_excel("data/202409 Trash Wheel Collection Data.xlsx",
              sheet = 4, 
-             range = "A2:L159",
+             range = "A2:L266",
              na = c("NA", ".", "")) |>
   janitor::clean_names() |>
-  filter(weight_tons != 0, volume_cubic_yards != 0) |>
   drop_na(weight_tons:homes_powered)
-
 Gwytrashwheel_df
 ```
 ## Before combining, add an additional column indicating which Trash Wheel is which!
@@ -75,12 +69,12 @@ combined_df
 There are `r nrow(combined_df)-3` observations in the combined data. 
 
 From available data, the total weight of trash collected by Professor Trash Wheel is 
-`r sum(filter(combined_df, which_trash_wheel == "Mr.Trash Wheel")$weight_tons, na.rm = TRUE) /2` tons.
+`r sum(filter(combined_df, which_trash_wheel == "Professor Trash Wheel")$weight_tons[1:(length(filter(combined_df, which_trash_wheel == "Professor Trash Wheel")$weight_tons) - 1)], na.rm = TRUE)` tons.
 
 And from available data, the total number of cigarette butts collected by Gwynnda in June of 2022 is 
 `r sum(filter(combined_df, which_trash_wheel == "Gwynnda Trash Wheel", month == "June", year == 2022)$cigarette_butts, na.rm = TRUE)`.
 
-I think it may because when we do data cleaning, the Gwynnda Trash Wheel dataset contain rows that do not include dumpster-specific data(June of 2022 is also in this range),and I discard those rows of data, so when I try to find the number of cigarette butts in the combined dataset, those part disappear, hence the value is 0!
+I think it may because when we do data cleaning, the Gwynnda Trash Wheel dataset contain many rows that do not include dumpster-specific data(June of 2022 is also in this range),and I discard those rows of data, so when I try to find the number of cigarette butts in the combined dataset, those part disappear, hence the value is 0!
 
 
 # Problem 3:
@@ -90,8 +84,7 @@ I think it may because when we do data cleaning, the Gwynnda Trash Wheel dataset
 ```{r}
 bakers_df = 
   read_csv("data/bakers.csv", na = c("NA", ".", "")) |>
-  janitor::clean_names() |>
-  distinct()  
+  janitor::clean_names()
 bakers_df  
 ```
 ## For bakes.csv dataset:
@@ -99,7 +92,6 @@ bakers_df
 bakes_df = 
   read_csv("data/bakes.csv", na = c("NA", ".", "", "UNKNOWN", "N/A", "Unknown")) |>
   janitor::clean_names() |>
-  distinct() |> 
   mutate(baker = ifelse(baker == "\"Jo\"", "Jo", baker)) 
 bakes_df  
 ```
@@ -107,8 +99,7 @@ bakes_df
 ```{r}
 results_df = 
   read_csv("data/results.csv", na = c("NA", ".", "", "Unknown", "UNKNOWN", "N/A"), skip = 2) |>
-  janitor::clean_names() |>
-  distinct()
+  janitor::clean_names() 
 results_df  
 ```
 ## Use anti_join to check discrepancies between bakers and bakes datasets
@@ -159,7 +150,7 @@ obtable
 ```
 ## Comment on this table – were there any predictable overall winners? Any surprises?
 
-1. Predictable Winners: We Look for bakers who consistently won Star Baker. If a baker frequently appeared as a Star Baker and then became the overall Winner, their victory would be predictable.
+1. Predictable overall Winners: We Look for bakers who consistently won Star Baker. If a baker frequently appeared as a Star Baker and then became the overall Winner, their victory would be predictable.
 
 2. Any Surprises: Any winner who did not frequently win Star Baker, or who only started winning in the later episodes, would be a surprise. Similarly, if a baker dominated the Star Baker titles but did not win the competition, this could also be unexpected.
 
@@ -169,7 +160,6 @@ obtable
 viewers_df = 
   read_csv("data/viewers.csv", na = c("NA")) |>
   janitor::clean_names() |>
-  distinct() |>
   pivot_longer(series_1:series_10, names_to = "series", values_to = "viewership") |>
   mutate(series = sub(".*_", "", series)) |>
   select(series, everything()) |>
