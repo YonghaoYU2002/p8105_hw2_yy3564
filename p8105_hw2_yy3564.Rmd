@@ -10,7 +10,7 @@ library(tidyverse)
 library(readxl)
 ```
 
-## First, read and clean the Mr.Trash Wheel dataset! 
+## First, read and clean the Mr.Trash Wheel dataset by following the procedure mentioned in the question! 
 ```{r}
 Mrtrashwheel_df = 
   read_excel("data/202409 Trash Wheel Collection Data.xlsx",
@@ -24,7 +24,7 @@ Mrtrashwheel_df =
   select(-sports_balls)
 Mrtrashwheel_df
 ```
-## Then, read and clean the Professor Trash Wheel dataset! 
+## Then, read and clean the Professor Trash Wheel dataset by following the procedure mentioned in the question! 
 ```{r}
 Proftrashwheel_df = 
   read_excel("data/202409 Trash Wheel Collection Data.xlsx",
@@ -36,8 +36,7 @@ Proftrashwheel_df =
 Proftrashwheel_df
 ```
 
-## Last, read and clean the Gwynnda Trash Wheel dataset! 
-
+## Last, read and clean the Gwynnda Trash Wheel dataset by following the procedure mentioned in the question! 
 ```{r}
 Gwytrashwheel_df = 
   read_excel("data/202409 Trash Wheel Collection Data.xlsx",
@@ -56,7 +55,9 @@ Gwytrashwheel_df = mutate(Gwytrashwheel_df, which_trash_wheel = "Gwynnda Trash W
 ```
 
 
-## Then find a way to combine the datasets,for "sports_balls_modified is NA", convert it into 0.
+## Then find a way to combine the datasets
+I choose 
+For "sports_balls_modified is NA", convert it into 0, because there Professor Trash Wheel and Gwynnda Trash Wheel do not count the number of sports balls  
 ```{r}
 combined_df = 
   bind_rows(Mrtrashwheel_df, Proftrashwheel_df, Gwytrashwheel_df) |>
@@ -65,16 +66,16 @@ combined_df
 ```
 ## Finally, we use inline R to write a paragraph about this data!!!
 
-
 There are `r nrow(combined_df)-3` observations in the combined data. 
 
 From available data, the total weight of trash collected by Professor Trash Wheel is 
-`r sum(filter(combined_df, which_trash_wheel == "Professor Trash Wheel")$weight_tons[1:(length(filter(combined_df, which_trash_wheel == "Professor Trash Wheel")$weight_tons) - 1)], na.rm = TRUE)` tons.
+`r sum(filter(combined_df, which_trash_wheel == "Professor Trash Wheel") |> pull(weight_tons) |> head(-1), na.rm = TRUE)` tons.
 
 And from available data, the total number of cigarette butts collected by Gwynnda in June of 2022 is 
-`r sum(filter(combined_df, which_trash_wheel == "Gwynnda Trash Wheel", month == "June", year == 2022)$cigarette_butts, na.rm = TRUE)`.
+`r sum(filter(combined_df, which_trash_wheel == "Gwynnda Trash Wheel", month == "June", year == 2022) |> pull(cigarette_butts), na.rm = TRUE)`.
 
 I think it may because when we do data cleaning, the Gwynnda Trash Wheel dataset contain many rows that do not include dumpster-specific data(June of 2022 is also in this range),and I discard those rows of data, so when I try to find the number of cigarette butts in the combined dataset, those part disappear, hence the value is 0!
+
 
 
 # Problem 3:
@@ -92,7 +93,7 @@ bakers_df
 bakes_df = 
   read_csv("data/bakes.csv", na = c("NA", ".", "", "UNKNOWN", "N/A", "Unknown")) |>
   janitor::clean_names() |>
-  mutate(baker = ifelse(baker == "\"Jo\"", "Jo", baker)) 
+  mutate(baker = ifelse(baker == "\"Jo\"", "Jo", baker)) #change "Jo"to Jo to make the string data more uniform
 bakes_df  
 ```
 ## Finally, for results.csv dataset:
@@ -103,10 +104,13 @@ results_df =
 results_df  
 ```
 ## Use anti_join to check discrepancies between bakers and bakes datasets
+First, I split the name when meeting " " in the bakers_df,in order to make our further anti_join and merging process more easy and accurate
 ```{r}
 bakers_df_updated = bakers_df |>
   mutate(baker = sub(" .*", "", baker_name)) |>
   select(series,baker,everything())
+```
+```{r}
 missing_in_bakers1 = anti_join(bakes_df, bakers_df_updated, by = c("series", "baker"))
 missing_in_bakes1 = anti_join(bakers_df_updated, bakes_df, by = c("series", "baker"))
 ```
@@ -136,7 +140,7 @@ write_csv(complete_dataset, "final_complete_dataset.csv")
 ```
 ## Describe your data cleaning process, including any questions you have or choices you made. Briefly discuss the final dataset:
 
-1. Describe the data cleaning process: First of all, I read the data from the bakers.csv file, handles missing values, converts column names to lowercase and standardizes the format, and finally detects and removes duplicate rows to create a cleaned data frame bakers_df. Then, I read the data from the bakes.csv file, treats specified values (like "NA", ".", "UNKNOWN", etc.) as missing, cleans and standardizes the column names, removes duplicate rows, and replaces the value "Jo" (if it appears with double quotes) in the baker column with the value of the Jo. The cleaned and modified data is stored in bakes_df for later use. After that, I read data from the results.csv file, with skipping the first two rows, and treats specific values (such as "NA", ".", "Unknown", "N/A", etc.) as missing values. It then cleans and standardizes the column names, removes any duplicate rows, and stores the cleaned data in results_df for later use!
+1. Describe the data cleaning process: First of all, I read the data from the bakers.csv file, handle missing values, convert column names to lowercase and standardizes the format, and finally detect and remove duplicate rows to create a cleaned data frame bakers_df. Then, I read the data from the bakes.csv file, treats specified values (like "NA", ".", "UNKNOWN", etc.) as missing, cleans and standardizes the column names, removes duplicate rows, and replaces the value "Jo" (if it appears with double quotes) in the baker column with the value of the Jo. The cleaned and modified data is stored in bakes_df for later use. After that, I read data from the results.csv file, with skipping the first two rows, and treats specific values (such as "NA", ".", "Unknown", "N/A", etc.) as missing values. It then cleans and standardizes the column names, removes any duplicate rows, and stores the cleaned data in results_df for later use!
 
 2. Briefly discuss the final dataset: The final dataset is achieved by the full join of the three cleaned datasets, in the final dataset, there are 1144 rows and 11 columns.
 
