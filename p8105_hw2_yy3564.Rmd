@@ -134,15 +134,17 @@ complete_dataset <- results_df |>
   full_join(bakers_df_updated, by = c("series", "baker"))
 complete_dataset
 ```
-## Export the final dataset as a CSV
-```{r, eval=FALSE}
-write_csv(complete_dataset, "final_complete_dataset.csv")
+## Export the final dataset as a CSV in the same file
+```{r}
+write_csv(complete_dataset, "data/final_complete_dataset.csv")
 ```
 ## Describe your data cleaning process, including any questions you have or choices you made. Briefly discuss the final dataset:
 
 1. Describe the data cleaning process: First of all, I read the data from the bakers.csv file, handle missing values, convert column names to lowercase and standardizes the format, and finally detect and remove duplicate rows to create a cleaned data frame bakers_df. Then, I read the data from the bakes.csv file, treats specified values (like "NA", ".", "UNKNOWN", etc.) as missing, cleans and standardizes the column names, removes duplicate rows, and replaces the value "Jo" (if it appears with double quotes) in the baker column with the value of the Jo. The cleaned and modified data is stored in bakes_df for later use. After that, I read data from the results.csv file, with skipping the first two rows, and treats specific values (such as "NA", ".", "Unknown", "N/A", etc.) as missing values. It then cleans and standardizes the column names, removes any duplicate rows, and stores the cleaned data in results_df for later use!
 
-2. Briefly discuss the final dataset: The final dataset is achieved by the full join of the three cleaned datasets, in the final dataset, there are 1144 rows and 11 columns.
+2. Briefly discuss the final dataset: The final dataset is achieved by the full join of the three cleaned datasets, in the final dataset, there are 1144 rows and 11 columns. 
+
+### Noted: I choose not to drop missing values/NAs during my data cleaning and merging procedures because 1. I want to keep the completeness of the dataset to do the calculation required later (make the calculation more accurate) 2.It's not specified/required to drop it in the problem!!
 
 
 ## Then Create a reader-friendly table showing the star baker or winner of each episode in Seasons 5 through 10:
